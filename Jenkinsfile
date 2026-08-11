@@ -49,17 +49,16 @@ pipeline {
             }
         }
     }
-
-        stage('Deploy') {
-            steps {
-                sshagent(['deploy-server-ssh']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no user@deploy-server \
-                        "docker pull ${IMAGE_NAME}:latest && \
-                         docker stop core-mis-frontend || true && \
-                         docker rm core-mis-frontend || true && \
-                         docker run -d --name core-mis-frontend -p 80:80 ${IMAGE_NAME}:latest"
-                    '''
+    stage('Deploy') {
+                steps {
+                    sshagent(['deploy-server-ssh']) {
+                        sh '''
+                            ssh -o StrictHostKeyChecking=no root@100.26.21.233 \
+                            "docker pull ${IMAGE_NAME}:latest && \
+                            docker stop maya-portfolio || true && \
+                            docker rm maya-portfolio || true && \
+                            docker run -d --name maya-portfolio -p 8080:80 ${IMAGE_NAME}:latest"
+                        '''
                 }
             }
         }
