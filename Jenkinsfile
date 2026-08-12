@@ -57,7 +57,7 @@ pipeline {
                             "docker pull ${IMAGE_NAME}:latest && \
                             docker stop maya-portfolio || true && \
                             docker rm maya-portfolio || true && \
-                            docker run -d --name maya-portfolio -p 8080:80 ${IMAGE_NAME}:latest"
+                            docker run -d --name maya-portfolio -p 8081:80 ${IMAGE_NAME}:latest
                         '''
                 }
             }
