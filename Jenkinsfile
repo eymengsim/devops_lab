@@ -1,66 +1,33 @@
+@Library('shared-lib') _
+
 pipeline {
     agent any
-
-    tools {
-        nodejs 'NodeJS-22'
-    }
-
     environment {
-        IMAGE_NAME = "mengsim/maya-chen-portfolio"
-        IMAGE_TAG  = "${env.BUILD_NUMBER}"
+        IMAGE_NAME = 'yourdockerhub/reactjs-app'
+        TAG        = "${env.BUILD_NUMBER}"
     }
-
     stages {
-        stage('Checkout') {
-            steps {
-                git branch: 'main',
-                    url: 'https://github.com/eymengsim/devops_lab.git'
-            }
+        stage('Clone') {
+            steps { cloneRepo('https://github.com/eymengsim/devops_lab.git') }
         }
-
-        stage('Install') {
-            steps {
-                sh 'rm -rf node_modules package-lock.json'
-                sh 'npm cache clean --force'
-                sh 'npm install'
-            }
+        stage('Sonar Scan') {
+            steps { scanSonarqube('reactjs-app') }
         }
-
         stage('Build') {
-            steps {
-                sh 'npm run build'
-            }
+            steps { buildDocker(type: 'reactjs', imageName: env.IMAGE_NAME, tag: env.TAG) }
         }
-
-        stage('Docker Build') {
-            steps {
-                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
-            }
+        stage('Push') {
+            steps { pushDocker(env.IMAGE_NAME, env.TAG) }
         }
-
-    stage('Docker Push') {
-        steps {
-            withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                    docker push ${IMAGE_NAME}:latest
-                '''
+        stage('Deploy') {
+            steps {
+                deployDocker(imageName: env.IMAGE_NAME, tag: env.TAG,
+                              containerName: 'reactjs-app', port: '3000:80')
             }
         }
     }
-    stage('Deploy') {
-                steps {
-                    sshagent(['deploy-server-ssh']) {
-                        sh '''
-                            ssh -o StrictHostKeyChecking=no root@100.26.21.233 \
-                            "docker pull ${IMAGE_NAME}:latest && \
-                            docker stop maya-portfolio || true && \
-                            docker rm maya-portfolio || true && \
-                            docker run -d --name maya-portfolio -p 8081:80 ${IMAGE_NAME}:latest
-                        '''
-                }
-            }
-        }
+    post {
+        success { sendTelegram("✅ ${env.IMAGE_NAME}:${env.TAG} deployed") }
+        failure { sendTelegram("❌ Build failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}") }
     }
 }
