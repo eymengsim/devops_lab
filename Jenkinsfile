@@ -3,7 +3,7 @@
 pipeline {
     agent any
     environment {
-        IMAGE_NAME = 'yourdockerhub/reactjs-app'
+        IMAGE_NAME = 'mengsim/reactjs-app'
         TAG        = "${env.BUILD_NUMBER}"
     }
     stages {
